@@ -1,0 +1,43 @@
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
+const bcrypt = require("bcrypt");
+
+const UserSchema = new Schema({
+  username: {
+    type: String,
+    required: true,
+    max: [60, "ユーザー名は最大60文字までです"],
+  },
+  email: {
+    type: String,
+    required: true,
+    lowercase: true,
+    unique: true,
+    max: [60, "emailは最大60文字までです"],
+  },
+  password: {
+    type: String,
+    required: true,
+    min: [6, "パスワードは6文字以上で入力してください"],
+    max: [30, "パスワードは最大30文字までです"],
+  },
+});
+
+UserSchema.methods.hasSamePassword = function (inputpasswd) {
+  const user = this;
+  return bcrypt.compareSync(inputpasswd, user.password);
+};
+
+UserSchema.pre("save", function (next) {
+  const user = this;
+  const saltRounds = 10;
+
+  bcrypt.genSalt(saltRounds, function (err, salt) {
+    bcrypt.hash(user.password, salt, function (err, hash) {
+      user.password = hash;
+      next();
+    });
+  });
+});
+
+module.exports = mongoose.model("User", UserSchema);
